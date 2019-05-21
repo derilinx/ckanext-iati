@@ -32,11 +32,11 @@ CSV_MAPPING = [
         ('contact-email', 'package', 'author_email'),
         ('state', 'package', 'state'),
         ('source-url', 'resources', 'url'),
-        ('format', 'resources', 'format'),
+        #('format', 'resources', 'format'),
         ('file-type','package', 'filetype'),
         ('recipient-country','package', 'country'),
-        ('last-updated-datetime','package', 'data_updated'),
-        ('activity-count','package', 'activity_count'),
+        #('last-updated-datetime','package', 'data_updated'),
+        #('activity-count','package', 'activity_count'),
         ('default-language','package', 'language'),
         ('secondary-publisher', 'package', 'secondary_publisher'),
         ]
@@ -120,17 +120,10 @@ class FieldValidator:
         return error_list
 
     @staticmethod
-    def date_time_parser(datetime_object):
-        """ Only consider if the datetime column is of type "%Y-%m-%d %H:%M:%S.%f" """
-
-        if len(datetime_object.strip()) == 0:
-            pass
-        elif len(datetime_object.strip()) < 8:
-            msg = "Not in acceptable format - format should be YYYY-MM-DD HH:MM:SS or YYYY-MM-DD or format csv column to date/time"
-            raise ValueError(msg)
-
-        date_time = date_parse(datetime_object)
-        date_time.date()
+    def date_time_parser():
+        """ Consider only current datetime """
+            
+        datetime_object = str(dt.datetime.now())          
 
         return datetime_object
     
@@ -503,6 +496,7 @@ def read_csv_file(ckan_ini_filepath, csv_file, user):
 
         # If no description provided, we assume delete it
         package['notes'] = package.get('notes', '')
+        package['resources'][0]['format'] = 'IATI-XML'
 
         return package
 
@@ -513,6 +507,7 @@ def read_csv_file(ckan_ini_filepath, csv_file, user):
             'user': user,
         }
         # Check if package exists
+
 
         try:
             # Get rid of auth audit on the context otherwise we'll get an
@@ -595,7 +590,7 @@ def read_csv_file(ckan_ini_filepath, csv_file, user):
                 package_dict = get_package_dict_from_row(row, context)
 
                 try:
-                    package_dict['data_updated'] = field_validator.date_time_parser(str(package_dict['data_updated']))
+                    package_dict['data_updated'] = field_validator.date_time_parser()
                 except Exception, e:
                     msg = str("Not in acceptable format - format should be YYYY-MM-DD HH:MM:SS or YYYY-MM-DD or format csv column to date/time")
                     raise ValueError(msg)
