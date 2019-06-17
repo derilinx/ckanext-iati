@@ -3,12 +3,15 @@ from dateutil.parser import parse as date_parse
 
 from email_validator import validate_email
 import re
-
+import logging
 from ckan.logic import get_action
 from ckan import authz as new_authz
 from ckan.lib.navl.dictization_functions import unflatten, Invalid
-
+import ckan.logic as logic
 from ckanext.iati.lists import FILE_TYPES, COUNTRIES
+
+NotFound = logic.NotFound
+log = logging.getLogger(__name__)
 
 def iati_one_resource(key, data, errors, context):
 
@@ -198,7 +201,9 @@ def licence_validator(key, data, errors, context):
     licenses_list = [license['id'] for license in licenses]
     
     if (data[key] not in licenses_list) or (data[key] == 'lc_notspecified'):
-	errors[key].append('Please specify the License.')
+        errors[key].append('Please specify the License.')
+
+
 
 
 
