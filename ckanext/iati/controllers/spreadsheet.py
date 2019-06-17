@@ -17,6 +17,7 @@ from ckanext.iati.helpers import extras_to_dict
 import ckan.lib.jobs as jobs
 from dateutil.parser import parse as date_parse
 import time
+from ckanext.iati import custom_archiver as ach
 
 log = logging.getLogger(__name__)
 _not_empty = p.toolkit.get_validator('not_empty')
@@ -508,7 +509,8 @@ def read_csv_file(ckan_ini_filepath, csv_file, user):
         }
         # Check if package exists
 
-
+        # Status of the update and create to run archiver on finish
+        status = False
         try:
             # Get rid of auth audit on the context otherwise we'll get an
             # exception
@@ -527,7 +529,11 @@ def read_csv_file(ckan_ini_filepath, csv_file, user):
             updated_package = p.toolkit.get_action('package_update')(context, package_dict)
             if counts:
                 counts['updated'].append(updated_package['name'])
+
+            # This indicates package update is successful
+            status = True
             log.debug('Package with name "%s" updated' % package_dict['name'])
+            return status
         except p.toolkit.ObjectNotFound:
             # Package needs to be created
             log.info('Package with name "%s" does not exist and will be created' % package_dict['name'])
@@ -546,7 +552,10 @@ def read_csv_file(ckan_ini_filepath, csv_file, user):
             new_package = p.toolkit.get_action('package_create')(context, package_dict)
             if counts:
                 counts['added'].append(new_package['name'])
+            # This indicates package create is successful
+            status = True
             log.debug('Package with name "%s" created' % package_dict['name'])
+            return status
 
     fieldnames = [f[0] for f in CSV_MAPPING]
     warnings = {}
@@ -602,8 +611,10 @@ def read_csv_file(ckan_ini_filepath, csv_file, user):
                 errors[i]['title'] = [msg]
                 continue
 
-            create_or_update_package(package_dict, counts, context=context)
+            status = create_or_update_package(package_dict, counts, context=context)
 
+            if status:
+                ach.run(package_id=package_dict.get('name'))
             del errors[i]
         except p.toolkit.ValidationError, e:
             iati_keys = dict([(f[2], f[0]) for f in CSV_MAPPING])
