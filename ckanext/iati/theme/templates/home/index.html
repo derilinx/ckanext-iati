@@ -25,7 +25,8 @@
       <div class="icon detail">
         <h2><a href="/help">Register a Publisher</a></h2>
         <div class="block">
-          <a href="/publisher"><strong>{{ h.get_num_active_publishers() }}</strong> Organisations have published so far</a>
+          <a href="/publisher"><strong>{{ h.get_active_publishers_count() }}</strong> Active Organization</a>
+          <a href="/publisher"><strong>{{ h.publishers_published_so_far_count() }}</strong> Organisations have published so far</a>
         </div>
         <p>The IATI Registry is the place for publishers to register their data.</p>
         <ul>

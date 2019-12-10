@@ -518,7 +518,6 @@ class IatiDatasets(p.SingletonPlugin, p.toolkit.DefaultDatasetForm):
             'return_select_options',
             'get_config_option',
             'check_nav_dropdown',
-            'get_num_active_publishers',
             'SI_number_span',
             'format_file_size',
             'extras_to_dict',
@@ -543,7 +542,9 @@ class IatiDatasets(p.SingletonPlugin, p.toolkit.DefaultDatasetForm):
             'first_published_date_patch',
             'publisher_first_published_date_validator',
             'organization_form_read_only',
-            'get_publisher_list_download_formats'
+            'get_publisher_list_download_formats',
+            'get_active_publishers_count',
+            'publishers_published_so_far_count'
         )
         return _get_module_functions(iati_helpers, function_names)
 

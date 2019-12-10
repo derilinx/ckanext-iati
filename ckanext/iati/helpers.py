@@ -1,4 +1,5 @@
 import urllib
+from sqlalchemy import and_ as _and_, or_ as _or_
 import os
 from xml.etree import ElementTree
 import datetime
@@ -192,21 +193,21 @@ def check_nav_dropdown(items):
         return return_items
     return False
 
-def get_num_active_publishers():
-    data_dict = {
-        'q':'*:*',
-        'facet.field': ['organization', 'country'],
-        'facet.limit': 10000,
-        'rows':0,
-        'start':0,
-    }
+def get_active_publishers_count():
+    count = model.Session.query(model.Group).filter(_and_(model.Group.state=='active', 
+            model.Group.is_organization == True)).count()
+    return count
 
-    query = p.toolkit.get_action('package_search')({} , data_dict)
-
-    num_publishers = len(query['search_facets']
-                         .get('organization', [])
-                         .get('items', []))
-    return num_publishers
+def publishers_published_so_far_count():
+    todays_date = datetime.datetime.today()
+    date = (todays_date - datetime.timedelta(days=365)).strftime('%Y-%m-%d') # Not considered leap year
+    count = model.Session.query(model.Group.id).\
+            join(model.Package, model.Group.id == model.Package.owner_org).\
+            filter(_and_(model.Package.state == 'active', model.Package.private == 'f', 
+            (_or_(model.Package.metadata_modified >= date, 
+            model.Package.metadata_created >= date)))).\
+            distinct().count()
+    return count
 
 def SI_number_span(number):
     ''' outputs a span with the number in SI unit eg 14700 -> 14.7k '''
