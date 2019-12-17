@@ -543,7 +543,6 @@ class IatiDatasets(p.SingletonPlugin, p.toolkit.DefaultDatasetForm):
             'publisher_first_published_date_validator',
             'organization_form_read_only',
             'get_publisher_list_download_formats',
-            'get_active_publishers_count',
             'publishers_published_so_far_count'
         )
         return _get_module_functions(iati_helpers, function_names)

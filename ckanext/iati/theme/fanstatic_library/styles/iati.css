@@ -11430,3 +11430,11 @@ table.dataTable thead .sorting_desc_disabled:before {
 .publisher-list-download{
   margin-bottom: 20px;
 }
+
+.publisher-stats{
+  margin: 15px;
+}
+.pub-count {
+  color: #0098db;
+  font-size:17px;
+}

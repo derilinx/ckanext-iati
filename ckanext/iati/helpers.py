@@ -193,20 +193,37 @@ def check_nav_dropdown(items):
         return return_items
     return False
 
-def get_active_publishers_count():
-    count = model.Session.query(model.Group).filter(_and_(model.Group.state=='active', 
-            model.Group.is_organization == True)).count()
-    return count
-
-def publishers_published_so_far_count():
-    todays_date = datetime.datetime.today()
-    date = (todays_date - datetime.timedelta(days=365)).strftime('%Y-%m-%d') # Not considered leap year
+def _get_publisher_count(date):
+    """
+    Get active publisher for the given time period.
+    i.e. active publisher with atleast one activity file.
+    """
     count = model.Session.query(model.Group.id).\
             join(model.Package, model.Group.id == model.Package.owner_org).\
-            filter(_and_(model.Package.state == 'active', model.Package.private == 'f', 
-            (_or_(model.Package.metadata_modified >= date, 
-            model.Package.metadata_created >= date)))).\
+            join(model.PackageExtra, model.Package.id == model.PackageExtra.package_id).\
+            filter(_and_(model.Package.state == 'active', model.Package.private == 'f',
+            model.PackageExtra.key == 'filetype', model.PackageExtra.value == 'activity', 
+            (_or_(model.Package.metadata_modified >= date, model.Package.metadata_created >= date)))).\
             distinct().count()
+    return int(count)
+
+def publishers_published_so_far_count():
+    """
+    # Not considered leap year
+    Active publisher with atleast one public activity file.
+    Time period:
+      - 24 months
+      - 12 months
+      - 6 months
+    """
+    todays_date = datetime.datetime.today()
+    date_year = (todays_date - datetime.timedelta(days=365)).strftime('%Y-%m-%d')
+    date_two_year = (todays_date - datetime.timedelta(days=730)).strftime('%Y-%m-%d')
+    date_six_months = (todays_date - datetime.timedelta(days=182)).strftime('%Y-%m-%d')
+    count = dict()
+    count['one_year'] = _get_publisher_count(date_year)
+    count['two_year'] = _get_publisher_count(date_two_year)
+    count['six_months'] = _get_publisher_count(date_six_months)
     return count
 
 def SI_number_span(number):

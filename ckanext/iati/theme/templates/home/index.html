@@ -23,10 +23,34 @@
         </ul>
       </div>
       <div class="icon detail">
+        {% set p_counts = h.publishers_published_so_far_count() %}
         <h2><a href="/help">Register a Publisher</a></h2>
         <div class="block">
-          <a href="/publisher"><strong>{{ h.get_active_publishers_count() }}</strong> Active Organization</a>
-          <a href="/publisher"><strong>{{ h.publishers_published_so_far_count() }}</strong> Organisations have published so far</a>
+          <a href="/publisher"><strong></strong> Publishers last updated: </a>
+        </div>
+        <div class="publisher-stats">
+          <table class="table table-hover table-bordered table-striped">
+   	   <thead>
+    	     <tr>
+      	      <th title="Time period">Period</th>
+              <th title="Count">Count</th>
+             </tr>
+           </thead>
+           <tbody>
+             <tr>
+               <td>24 months</td>
+               <td class="pub-count">{{ p_counts.two_year }}</td>
+             </tr>
+             <tr>
+ 	       <td>12 months</td>
+               <td class="pub-count">{{ p_counts.one_year }}</td>
+             </tr>
+             <tr>
+               <td>6 months</td>
+               <td class="pub-count">{{ p_counts.six_months }}</td>
+             </tr> 
+           </tbody>
+         </table>
         </div>
         <p>The IATI Registry is the place for publishers to register their data.</p>
         <ul>
