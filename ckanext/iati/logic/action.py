@@ -765,7 +765,6 @@ def _custom_group_or_org_list(context, data_dict, is_org=True):
         query = query.filter(_or_(
             model.Group.name.ilike(q),
             model.Group.title.ilike(q),
-            model.Group.description.ilike(q),
             model.GroupExtra.value.ilike(q),
         ))
 
