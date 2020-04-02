@@ -6598,9 +6598,7 @@ a .icon-flip-vertical:before {
 .icon-renren:before {
   content: "\f18b";
 }
-.container {
-  width: 960px;
-}
+
 textarea,
 input[type="text"],
 input[type="password"],
@@ -10196,11 +10194,6 @@ iframe {
   -webkit-box-shadow: none;
   box-shadow: none;
 }
-.container {
-  width: 940px;
-  margin-left: auto;
-  margin-right: auto;
-}
 .wrapper {
   position: relative;
 }
@@ -11351,9 +11344,7 @@ form .info-block.info-inline {
   background-color: #e3e3e3;
   padding: 1em 3em 1em 2em;
   list-style-type: none;
-  position: absolute;
-  top: 0;
-  right: 0;
+  float: right;
   display: block;
 }
 .navigation-utility__item:first-child {
@@ -11369,12 +11360,6 @@ form .info-block.info-inline {
 }
 #header .container {
   position: relative;
-}
-.navigation-primary {
-  display: block;
-  position: absolute;
-  right: 0;
-  top: 4.9em;
 }
 .navigation-primary__item:first-child {
   margin-left: 0;
