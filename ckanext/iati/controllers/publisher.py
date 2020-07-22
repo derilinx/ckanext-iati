@@ -21,7 +21,7 @@ class PublisherController(OrganizationController):
     def _guess_group_type(self, expecting_name=False):
         return 'organization'
 
-    def publisher_index(self):
+    def publisher_index(self, _is_my_dashboard=None):
         """
         Modified version of organization index.
         - Only fo type organization.
@@ -59,6 +59,7 @@ class PublisherController(OrganizationController):
                 'sort': sort_by,
                 'type': group_type or 'group',
             }
+
             global_results = self._action('group_list')(
                 context, data_dict_global_results)
         except ValidationError as e:
@@ -80,7 +81,10 @@ class PublisherController(OrganizationController):
             'offset': items_per_page * (page - 1),
             'include_extras': True
         }
-        page_results = iati_action.custom_group_list(context, data_dict_page_results)
+        if _is_my_dashboard:
+            page_results = iati_action.organization_list_for_user_custom(context, data_dict_page_results)
+        else:
+            page_results = iati_action.custom_group_list(context, data_dict_page_results)
 
         c.page = h.Page(
             collection=global_results,
@@ -90,8 +94,11 @@ class PublisherController(OrganizationController):
         )
 
         c.page.items = page_results
-        return render(self._index_template(group_type),
-                      extra_vars={'group_type': group_type})
+        if _is_my_dashboard:
+            return render('user/my_organizations.html', extra_vars={'group_type': group_type})
+        else:
+            return render(self._index_template(group_type),
+                          extra_vars={'group_type': group_type})
 
     def members_read(self, id):
         context = {'model': model, 'session': model.Session,
@@ -125,7 +132,7 @@ class PublisherController(OrganizationController):
         try:
             if not c.user:
                 raise logic.NotAuthorized
-            return render('user/my_organizations.html')
+            return self.publisher_index(_is_my_dashboard=True)
         except logic.NotAuthorized:
             p.toolkit.abort(401, p.toolkit._('Unauthorized to visit my publisher page  %s') % '')
 

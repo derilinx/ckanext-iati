@@ -773,3 +773,145 @@ def user_create(context, data_dict):
         raise ValidationError(errors)
     return create_core.user_create(context, data_dict)
 
+
+def organization_list_for_user_custom(context, data_dict):
+    """
+    This is internal. Do not register to api action
+    Search organization with default permission manage group
+
+    """
+    model = context['model']
+    if data_dict.get('id'):
+        user_obj = model.User.get(data_dict['id'])
+        if not user_obj:
+            raise NotFound
+        user = user_obj.name
+    else:
+        user = context['user']
+
+    _check_access('organization_list_for_user', context, data_dict)
+    sysadmin = authz.is_sysadmin(user)
+
+    # T0DO
+    pagination_dict = dict()
+    limit = data_dict.get('limit')
+    if limit:
+        pagination_dict['limit'] = data_dict['limit']
+    offset = data_dict.get('offset')
+    if offset:
+        pagination_dict['offset'] = data_dict['offset']
+    if pagination_dict:
+        pagination_dict, errors = _validate(
+            data_dict, logic.schema.default_pagination_schema(), context)
+        if errors:
+            raise ValidationError(errors)
+
+    q = data_dict.get('q', '').strip()
+
+    all_fields = asbool(data_dict.get('all_fields', None))
+
+    if all_fields:
+        # all_fields is really computationally expensive, so need a tight limit
+        max_limit = config.get(
+            'ckan.group_and_organization_list_all_fields_max', 25)
+    else:
+        max_limit = config.get('ckan.group_and_organization_list_max', 1000)
+
+    if limit is None or limit > max_limit:
+        limit = max_limit
+
+    # T0DO
+
+    orgs_q = model.Session.query(model.Group) \
+        .filter(model.Group.is_organization == True) \
+        .filter(model.Group.state == 'active')\
+        .join(model.GroupExtra)\
+        .filter(model.GroupExtra.key == 'publisher_iati_id')
+
+    if sysadmin:
+        if q:
+            orgs_q = orgs_q.filter(_or_(
+                model.Group.name.ilike(q),
+                model.Group.title.ilike(q),
+                model.GroupExtra.value.ilike(q)
+            ))
+
+        if offset:
+            orgs_q = orgs_q.offset(offset)
+
+        if limit:
+            orgs_q = orgs_q.limit(limit)
+
+        orgs_and_capacities = [(org, 'admin') for org in orgs_q.all()]
+    else:
+        # for non-Sysadmins check they have the required permission
+
+        permission = data_dict.get('permission', 'manage_group')
+
+        roles = authz.get_roles_with_permission(permission)
+
+        if not roles:
+            return []
+        user_id = authz.get_user_id_for_username(user, allow_none=True)
+        if not user_id:
+            return []
+
+        q_non_sysadmin = model.Session.query(model.Member, model.Group) \
+            .filter(model.Member.table_name == 'user') \
+            .filter(model.Member.capacity.in_(roles)) \
+            .filter(model.Member.table_id == user_id) \
+            .filter(model.Member.state == 'active') \
+            .join(model.Group)\
+            .join(model.GroupExtra)\
+            .filter(model.GroupExtra.key == 'publisher_iati_id')
+
+        if q:
+            q_non_sysadmin = q_non_sysadmin.filter(_or_(
+                model.Group.name.ilike(q),
+                model.Group.title.ilike(q),
+                model.GroupExtra.value.ilike(q)
+            ))
+
+        if offset:
+            q_non_sysadmin = q_non_sysadmin.offset(offset)
+
+        if limit:
+            q_non_sysadmin = q_non_sysadmin.limit(limit)
+
+        group_ids = set()
+        roles_that_cascade = \
+            authz.check_config_permission('roles_that_cascade_to_sub_groups')
+        group_ids_to_capacities = {}
+        for member, group in q_non_sysadmin.all():
+            if member.capacity in roles_that_cascade:
+                children_group_ids = [
+                    grp_tuple[0] for grp_tuple
+                    in group.get_children_group_hierarchy(type='organization')
+                ]
+                for group_id in children_group_ids:
+                    group_ids_to_capacities[group_id] = member.capacity
+                group_ids |= set(children_group_ids)
+
+            group_ids_to_capacities[group.id] = member.capacity
+            group_ids.add(group.id)
+
+        if not group_ids:
+            return []
+
+        orgs_q = orgs_q.filter(model.Group.id.in_(group_ids))
+        orgs_and_capacities = [
+            (org, group_ids_to_capacities[org.id]) for org in orgs_q.all()]
+
+    context['with_capacity'] = True
+    orgs_list = model_dictize.group_list_dictize(orgs_and_capacities,
+                                                 context,
+                                                 with_package_counts=True,
+                                                 include_extras=True
+                                               )
+    for org in orgs_list:
+        _extras = org.pop(u'extras', [])
+        if _extras:
+            for _extra in _extras:
+                if _extra.get(u'state', u'') == u"active":
+                    org[_extra.get(u'key')] = _extra.get(u'value')
+    return orgs_list
