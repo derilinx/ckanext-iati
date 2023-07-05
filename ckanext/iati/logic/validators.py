@@ -3,6 +3,8 @@ from dateutil.parser import parse as date_parse
 from datetime import datetime
 from email_validator import validate_email
 import re
+import requests
+import os
 from sqlalchemy import and_
 from ckan.logic import get_action
 from ckan import authz as new_authz
@@ -26,15 +28,22 @@ def iati_resource_count(key, data, errors, context):
 
 def send_url_invalid_email(context, is_url_error=True):
     user = context['auth_user_obj']
+    package = context['package']
+    host = os.environ.get('HOST')
+    
+    res = requests.post('https://{0}/api/3/action/package_show?id={1}'.format(host, package.name)).json()
+    publisher_name = res['result']['publisher_iati_id']
+    dataset_link = 'https://{0}/dataset/{1}'.format(host, package.name)
+
     if is_url_error:
         body = emailer.data_has_url_errors.format(
-            user_name=context['user'], publisher_name='publisher_name',
-            publisher_registry_dataset_link='publisher_registry_dataset_link'
+            user_name=context['user'], publisher_name=publisher_name,
+            publisher_registry_dataset_link=dataset_link
         )
     else:
         body = emailer.data_not_xml_email_body.format(
-            user_name=context['user'], publisher_name='publisher_name',
-            publisher_registry_dataset_link='publisher_registry_dataset_link'
+            user_name=context['user'], publisher_name=publisher_name,
+            publisher_registry_dataset_link=dataset_link
         )
 
     subject = "Invalid dataset upload format"
